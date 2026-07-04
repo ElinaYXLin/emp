@@ -11,7 +11,7 @@ final class AudioEngine {
     private let reverbEffect : AVAudioUnitEffect
     private let eqNode       : AVAudioUnitEQ
     private let distNode     : AVAudioUnitDistortion
-    private let dynNode      : AVAudioUnitDynamicsProcessor
+    private let dynNode      : AVAudioUnitEffect
     private let tapMixer     = AVAudioMixerNode()
 
     // MARK: - Tap output
@@ -48,7 +48,12 @@ final class AudioEngine {
         distNode.preGain    = 0
         distNode.wetDryMix  = 0
 
-        dynNode = AVAudioUnitDynamicsProcessor()
+        let dynDesc = AudioComponentDescription(
+            componentType:         kAudioUnitType_Dynamics,
+            componentSubType:      kAudioUnitSubType_DynamicsProcessor,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0, componentFlagsMask: 0)
+        dynNode = AVAudioUnitEffect(audioComponentDescription: dynDesc)
 
         buildGraph()
         setLowLatency()
@@ -128,19 +133,21 @@ final class AudioEngine {
     enum DynamicsMode { case limiter, compressor }
 
     func setDynamics(mode: DynamicsMode) {
+        // kDynamicsProcessorParam_Threshold=0, HeadRoom=1, AttackTime=4, ReleaseTime=5, MasterGain=6
+        let au = dynNode.audioUnit
         switch mode {
         case .limiter:
-            dynNode.threshold   = -1
-            dynNode.headRoom    = 40
-            dynNode.attackTime  = 0.001
-            dynNode.releaseTime = 0.05
-            dynNode.masterGain  = 0
+            AudioUnitSetParameter(au, 0, kAudioUnitScope_Global, 0, -1,   0)  // threshold
+            AudioUnitSetParameter(au, 1, kAudioUnitScope_Global, 0, 40,   0)  // headroom
+            AudioUnitSetParameter(au, 4, kAudioUnitScope_Global, 0, 0.001,0)  // attack
+            AudioUnitSetParameter(au, 5, kAudioUnitScope_Global, 0, 0.05, 0)  // release
+            AudioUnitSetParameter(au, 6, kAudioUnitScope_Global, 0, 0,    0)  // master gain
         case .compressor:
-            dynNode.threshold   = -18
-            dynNode.headRoom    = 10
-            dynNode.attackTime  = 0.01
-            dynNode.releaseTime = 0.25
-            dynNode.masterGain  = 6
+            AudioUnitSetParameter(au, 0, kAudioUnitScope_Global, 0, -18,  0)
+            AudioUnitSetParameter(au, 1, kAudioUnitScope_Global, 0, 10,   0)
+            AudioUnitSetParameter(au, 4, kAudioUnitScope_Global, 0, 0.01, 0)
+            AudioUnitSetParameter(au, 5, kAudioUnitScope_Global, 0, 0.25, 0)
+            AudioUnitSetParameter(au, 6, kAudioUnitScope_Global, 0, 6,    0)
         }
     }
 
