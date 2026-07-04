@@ -1,0 +1,25 @@
+{
+  "_fracture_settings": true,
+  "color": "#35d6d0",
+  "macro": 100,
+  "sensitivity": {
+    "reverb": 14.999999999999996,
+    "eq": 71.2,
+    "sat": 7.8
+  },
+  "ranges": {
+    "reverb": {
+      "min": 0,
+      "max": 100
+    },
+    "eq": {
+      "min": 0,
+      "max": 100
+    },
+    "sat": {
+      "min": 0,
+      "max": 100
+    }
+  },
+  "order": "shuffle"
+}
