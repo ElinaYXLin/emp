@@ -8,7 +8,7 @@ A local music player with a hand-tuned DSP effects chain — reverb, EQ, saturat
 >
 > The reverb, EQ boost, saturation, and compression stack can raise perceived loudness well above the original signal — and the effect is non-linear: a small macro move at high settings can produce a sudden, very loud burst.
 >
-> - **Always start with your system volume at 20–30 % and raise it gradually.**
+> - **Always start with your system volume at 10–20 % and raise it gradually.**
 > - Never run the Vibrato mode at high macro levels with headphones on. The drifting saturation can produce sharp transient spikes.
 > - The Compressor mode with makeup gain can push levels significantly above the source material's loudness.
 > - If you hear ear pain, ringing, muffled sound, or discomfort — stop immediately and rest your ears.
