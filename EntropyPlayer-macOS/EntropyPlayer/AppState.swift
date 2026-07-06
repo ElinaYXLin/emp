@@ -26,6 +26,7 @@ final class AppState: ObservableObject {
     // MARK: Published UI state
     @Published var macro: Double = 0              // 0–100
     @Published var preampDb: Double = 0           // -12…0
+    @Published var postGainDb: Double = 0         // -24…24, final output volume trim/boost
     @Published var sensitivity: [String: Double] = ["reverb": 70, "eq": 50, "sat": 50]
     @Published var ranges: [String: RangeValue]  = ["reverb": .init(), "eq": .init(), "sat": .init()]
     @Published var waveColor: Color = Color(hex: "#35d6d0")
@@ -40,8 +41,10 @@ final class AppState: ObservableObject {
 
     // System audio capture
     @Published var systemCaptureActive = false
-    @Published var inputDevices: [(id: AudioDeviceID, name: String)] = []
-    @Published var selectedInputDeviceID: AudioDeviceID? = nil
+    @Published var inputDevices:  [(id: AudioDeviceID, name: String)] = []
+    @Published var outputDevices: [(id: AudioDeviceID, name: String)] = []
+    @Published var selectedInputDeviceID:  AudioDeviceID? = nil
+    @Published var selectedOutputDeviceID: AudioDeviceID? = nil
     @Published var systemCaptureError: String? = nil
 
     enum MacroMode { case manual, vibrato }
@@ -49,7 +52,7 @@ final class AppState: ObservableObject {
 
     // MARK: Sub-objects
     let audio    = AudioEngine()
-    let playlist = PlaylistManager()
+    @Published var playlist = PlaylistManager()
 
     // MARK: Vibrato state
     private var vibratoTimer: Timer?
@@ -73,8 +76,10 @@ final class AppState: ObservableObject {
             self.currentTime = self.audio.currentTime
         }
 
-        inputDevices = audio.listInputDevices()
-        selectedInputDeviceID = inputDevices.first?.id
+        inputDevices  = audio.listInputDevices()
+        outputDevices = audio.listOutputDevices()
+        selectedInputDeviceID  = inputDevices.first?.id
+        selectedOutputDeviceID = outputDevices.first?.id
     }
 
     // MARK: - System capture
@@ -85,27 +90,40 @@ final class AppState: ObservableObject {
             systemCaptureActive = false
             trackName = "no track loaded"
             isPlaying = false
-        } else {
-            guard let devID = selectedInputDeviceID else {
-                systemCaptureError = "Select an input device first"
-                return
-            }
-            do {
-                try audio.startSystemCapture(deviceID: devID)
-                systemCaptureActive = true
-                trackName = "System Audio — LIVE"
-                isPlaying = false
-            } catch {
-                systemCaptureError = error.localizedDescription
+            return
+        }
+
+        guard let inID  = selectedInputDeviceID  else { systemCaptureError = "Select an input (BlackHole) device"; return }
+        guard let outID = selectedOutputDeviceID else { systemCaptureError = "Select an output (EarPods/speakers) device"; return }
+
+        // macOS sandbox requires explicit permission before any audio input unit starts.
+        AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard granted else {
+                    self.systemCaptureError = "Audio input denied — allow in System Preferences → Privacy → Microphone"
+                    return
+                }
+                do {
+                    try self.audio.startSystemCapture(inputDeviceID: inID, outputDeviceID: outID)
+                    self.systemCaptureActive = true
+                    self.trackName = "System Audio — LIVE"
+                    self.isPlaying = false
+                } catch {
+                    self.systemCaptureError = error.localizedDescription
+                }
             }
         }
     }
 
-    func switchCaptureDevice(_ deviceID: AudioDeviceID) {
-        selectedInputDeviceID = deviceID
-        guard systemCaptureActive else { return }
+    func switchCaptureDevice(input: AudioDeviceID? = nil, output: AudioDeviceID? = nil) {
+        if let id = input  { selectedInputDeviceID  = id }
+        if let id = output { selectedOutputDeviceID = id }
+        guard systemCaptureActive,
+              let inID  = selectedInputDeviceID,
+              let outID = selectedOutputDeviceID else { return }
         do {
-            try audio.startSystemCapture(deviceID: deviceID)
+            try audio.startSystemCapture(inputDeviceID: inID, outputDeviceID: outID)
         } catch {
             systemCaptureError = error.localizedDescription
             systemCaptureActive = false
@@ -113,10 +131,15 @@ final class AppState: ObservableObject {
     }
 
     func refreshInputDevices() {
-        inputDevices = audio.listInputDevices()
+        inputDevices  = audio.listInputDevices()
+        outputDevices = audio.listOutputDevices()
         if let current = selectedInputDeviceID,
            !inputDevices.contains(where: { $0.id == current }) {
             selectedInputDeviceID = inputDevices.first?.id
+        }
+        if let current = selectedOutputDeviceID,
+           !outputDevices.contains(where: { $0.id == current }) {
+            selectedOutputDeviceID = outputDevices.first?.id
         }
     }
 

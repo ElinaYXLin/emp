@@ -39,6 +39,11 @@ struct KnobView: View {
                         .offset(y: -13)
                         .rotationEffect(.degrees(-135 + value / 100 * 270))
                 }
+                // Without this, only the inscribed circle registers drags —
+                // the corners of its own 40x40 bounding box (still visually
+                // "on the knob" to a user) are dead space by SwiftUI's default
+                // hit-testing for a Circle shape.
+                .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { drag in

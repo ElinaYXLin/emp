@@ -65,7 +65,16 @@ struct VerticalSliderView: View {
                         .offset(x: (trackW - 26) / 2, y: handleY)
                 }
                 .frame(width: trackW)
-                .contentShape(Rectangle().size(.init(width: 40, height: trackH)).offset(x: -15))
+                // Widen the hit-test area to comfortably cover the 26pt-wide
+                // handle (previously an offset invisible rectangle that didn't
+                // actually line up with where the handle renders — the offset
+                // centered on the track's own center, not accounting for the
+                // handle's additional centering offset, so clicks on the
+                // visible handle often landed outside the real hit area).
+                // Centering the narrow visual within a wider frame keeps the
+                // math simple and guaranteed-aligned.
+                .frame(width: geo.size.width, height: trackH, alignment: .center)
+                .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { drag in
@@ -77,7 +86,7 @@ struct VerticalSliderView: View {
                         .onEnded { _ in isDragging = false; startPct = pct }
                 )
             }
-            .frame(width: trackW, height: trackH)
+            .frame(width: 40, height: trackH)
 
             Text(displayText)
                 .font(.system(size: 10, design: .monospaced))

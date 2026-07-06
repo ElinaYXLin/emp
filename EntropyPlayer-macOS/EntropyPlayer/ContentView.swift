@@ -198,19 +198,33 @@ struct ContentView: View {
     }
 
     var devicePicker: some View {
-        Picker("", selection: Binding(
-            get: { app.selectedInputDeviceID },
-            set: { if let id = $0 { app.switchCaptureDevice(id) } }
-        )) {
-            ForEach(app.inputDevices, id: \.id) { dev in
-                Text(dev.name)
-                    .font(.system(size: 11, design: .monospaced))
-                    .tag(Optional(dev.id))
+        HStack(spacing: 4) {
+            Text("IN").font(.system(size: 9, design: .monospaced)).foregroundColor(Color(hex:"#8f8778"))
+            Picker("", selection: Binding(
+                get: { app.selectedInputDeviceID },
+                set: { if let id = $0 { app.switchCaptureDevice(input: id) } }
+            )) {
+                ForEach(app.inputDevices, id: \.id) { dev in
+                    Text(dev.name).tag(Optional(dev.id))
+                }
             }
+            .labelsHidden()
+            .frame(width: 140)
+            .pickerStyle(.menu)
+
+            Text("OUT").font(.system(size: 9, design: .monospaced)).foregroundColor(Color(hex:"#8f8778"))
+            Picker("", selection: Binding(
+                get: { app.selectedOutputDeviceID },
+                set: { if let id = $0 { app.switchCaptureDevice(output: id) } }
+            )) {
+                ForEach(app.outputDevices, id: \.id) { dev in
+                    Text(dev.name).tag(Optional(dev.id))
+                }
+            }
+            .labelsHidden()
+            .frame(width: 140)
+            .pickerStyle(.menu)
         }
-        .labelsHidden()
-        .frame(width: 160)
-        .pickerStyle(.menu)
     }
 
     // MARK: Main grid
@@ -221,6 +235,7 @@ struct ContentView: View {
             macroPanel
             centerPanel
             macroSliderPanel
+            postGainPanel
         }
         .padding(14)
     }
@@ -358,6 +373,27 @@ struct ContentView: View {
                     accentColor: app.waveColor)
             }
             .padding(8)
+        }
+        .frame(width: 68)
+    }
+
+    // MARK: Post-gain (final output volume, sent to the actual output device)
+
+    var postGainPanel: some View {
+        ZStack {
+            panelBG
+            VStack {
+                let postGainPct = Binding(
+                    get: { (app.postGainDb + 24) / 48 * 100 },   // -24→24 dB maps 0→100
+                    set: { app.postGainDb = $0 / 100 * 48 - 24
+                           app.audio.setPostGain(db: Float(app.postGainDb)) })
+                VerticalSliderView(
+                    title: "POST-GAIN",
+                    pct: postGainPct,
+                    displayText: app.postGainDb == 0 ? "0 dB" : String(format: "%.1f dB", app.postGainDb),
+                    accentColor: Color(hex: "#3dd6ff"))
+            }
+            .padding(12)
         }
         .frame(width: 68)
     }

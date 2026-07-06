@@ -64,10 +64,11 @@
 
   /* ---- Top bar ---- */
   .topbar{
-    display:flex; align-items:center; gap:10px; padding:12px 16px; flex-wrap:wrap;
-    clip-path: polygon(0 0,100% 0,100% 78%,98.4% 100%,61% 92%,60% 100%,40% 91%,22% 100%,0 86%);
+    display:flex; flex-direction:column; gap:8px; padding:12px 16px;
+    clip-path: polygon(0 0,100% 0,100% 88%,98.4% 100%,61% 93%,60% 100%,40% 92%,22% 100%,0 89%);
     transform: rotate(-0.25deg); margin-bottom:14px;
   }
+  .topbar-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .btn{
     font-family:'Black Ops One',sans-serif; font-size:12.5px; letter-spacing:0.06em;
     color:var(--text); background:linear-gradient(160deg,#3a352c,#211d18);
@@ -90,6 +91,12 @@
   }
   .toggle-pair .btn{ clip-path:none; border:none; }
   .toggle-pair .btn:first-child{ border-right:1px solid rgba(0,0,0,0.5); }
+  .toggle-triple{
+    display:flex; border:1px solid rgba(0,0,0,0.6);
+    clip-path: polygon(0 0,96% 0,100% 100%,4% 100%);
+  }
+  .toggle-triple .btn{ clip-path:none; border:none; }
+  .toggle-triple .btn:not(:last-child){ border-right:1px solid rgba(0,0,0,0.5); }
   .spacer{ flex:1; }
 
   .search-wrap{ position:relative; }
@@ -107,12 +114,12 @@
   .search-input:focus{ outline: 1px solid var(--ember-glow); }
   .search-results{
     display:none;
-    position:absolute; top: calc(100% + 6px); left:0;
-    width: 260px; max-height: 260px; overflow-y:auto;
+    position:fixed;
+    width: 260px; max-height: 50vh; overflow-y:auto;
     background: linear-gradient(160deg, var(--panel), var(--panel-dark));
     border: 1px solid rgba(0,0,0,0.7);
     box-shadow: 0 12px 24px -8px rgba(0,0,0,0.8);
-    z-index: 50;
+    z-index: 9999;
   }
   .search-results.open{ display:block; }
   .search-result-item{
@@ -139,7 +146,29 @@
   #settingsInput{ display:none; }
 
   /* ---- Main grid ---- */
-  .main{ display:grid; grid-template-columns:260px 1fr 64px; gap:14px; margin-bottom:14px; }
+  .main{ display:grid; grid-template-columns:68px 260px 1fr 64px; gap:14px; margin-bottom:14px; }
+
+  /* ---- Pre-amp panel ---- */
+  .preamp-panel{
+    padding:14px 8px; display:flex; flex-direction:column; align-items:center;
+    clip-path: polygon(0 3%,100% 0,100% 97%,0 100%); transform:rotate(-0.3deg);
+  }
+  .preamp-track{
+    position:relative; width:10px; height:220px;
+    background: linear-gradient(to bottom, var(--ember-glow) 0%, var(--degraded) 0%, var(--degraded-dark) 100%);
+    border:1px solid rgba(0,0,0,0.7); cursor:ns-resize; touch-action:none; flex-shrink:0;
+  }
+  .preamp-handle{
+    position:absolute; left:50%; width:26px; height:14px;
+    background: linear-gradient(160deg,var(--metal-light),var(--metal) 60%,#1c1a16);
+    border:1px solid rgba(0,0,0,0.7); box-shadow:0 2px 4px rgba(0,0,0,0.6);
+    transform:translate(-50%,-50%); border-radius:2px;
+  }
+  .preamp-handle::after{
+    content:""; position:absolute; inset:0; margin:auto; width:4px; height:4px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,var(--rivet),#2a2620);
+  }
+  .preamp-db{ margin-top:8px; font-size:10px; color:var(--text-dim); white-space:nowrap; }
 
   .macro-panel{
     padding:18px 14px; display:flex; flex-direction:column; gap:18px;
@@ -226,10 +255,6 @@
     background:radial-gradient(circle at 35% 30%,var(--rivet),#2a2620);
   }
   .slider-pct{ margin-top:8px; font-size:10px; color:var(--text-dim); }
-  .ramp-btn{
-    margin-top: 12px; padding: 6px 4px; font-size: 8.5px; width: 100%;
-    text-align:center; clip-path:none;
-  }
 
   /* ---- Transport ---- */
   .transport{
@@ -266,33 +291,58 @@
   <div class="app-shell">
     <!-- TOP BAR -->
     <div class="shard topbar">
-      <button class="btn primary" id="btnOpen">Open</button>
-      <button class="btn primary" id="btnSave">Save</button>
-      <div class="search-wrap" id="searchWrap">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search tracks…" autocomplete="off">
-        <div class="search-results" id="searchResults"></div>
+      <!-- Row 1 -->
+      <div class="topbar-row">
+        <button class="btn primary" id="btnOpen">Open</button>
+        <button class="btn primary" id="btnSave">Save</button>
+        <div class="search-wrap" id="searchWrap">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search tracks…" autocomplete="off">
+        </div>
+        <div class="toggle-pair">
+          <button class="btn on" id="btnAlpha">Alphabetical</button>
+          <button class="btn" id="btnShuffle">Shuffle</button>
+        </div>
+        <button class="btn small" id="btnSaveSettings">Save Settings</button>
+        <button class="btn small" id="btnLoadSettings">Upload Settings</button>
+        <div class="spacer"></div>
+        <span style="font-size:9.5px;color:var(--text-dim);letter-spacing:0.05em;">COLOR</span>
+        <button class="color-btn" id="colorBtn" title="Waveform color"></button>
+        <input type="color" id="colorInput" value="#35d6d0">
+        <input type="file" id="settingsInput" accept=".json">
       </div>
-      <div class="toggle-pair">
-        <button class="btn on" id="btnAlpha">Alphabetical</button>
-        <button class="btn" id="btnShuffle">Shuffle</button>
+      <!-- Row 2 -->
+      <div class="topbar-row" style="margin-top:-3px;">
+        <div class="toggle-pair">
+          <button class="btn on" id="btnLimiter">Limiter</button>
+          <button class="btn" id="btnCompressor">Compressor</button>
+        </div>
+        <div class="toggle-triple">
+          <button class="btn on" id="btnManual">Manual</button>
+          <button class="btn" id="btnAuto">Auto</button>
+          <button class="btn" id="btnVibrato">Vibrato</button>
+        </div>
+        <div class="toggle-pair" id="vibratoSpeedGroup" style="display:none">
+          <button class="btn on" id="btnSlow">Slow</button>
+          <button class="btn" id="btnFast">Fast</button>
+        </div>
       </div>
-      <div class="toggle-pair">
-        <button class="btn on" id="btnLimiter">Limiter</button>
-        <button class="btn" id="btnCompressor">Compressor</button>
-      </div>
-      <button class="btn small" id="btnSaveSettings">Save Settings</button>
-      <button class="btn small" id="btnLoadSettings">Upload Settings</button>
-      <div class="spacer"></div>
-      <span style="font-size:9.5px;color:var(--text-dim);letter-spacing:0.05em;">COLOR</span>
-      <button class="color-btn" id="colorBtn" title="Waveform color"></button>
-      <input type="color" id="colorInput" value="#35d6d0">
-      <input type="file" id="settingsInput" accept=".json">
       <span class="rivet" style="top:6px;left:6px;"></span>
       <span class="rivet" style="bottom:10px;right:14px;"></span>
     </div>
 
     <!-- MAIN GRID -->
     <div class="main">
+      <!-- PRE-AMP slider (first in DSP chain) -->
+      <div class="shard preamp-panel">
+        <span class="slider-label">PRE-AMP</span>
+        <div class="preamp-track" id="preampTrack">
+          <div class="preamp-handle" id="preampHandle"></div>
+        </div>
+        <span class="preamp-db" id="preampDb">0 dB</span>
+        <span class="rivet" style="top:8px;left:4px;"></span>
+        <span class="rivet" style="bottom:32px;right:4px;"></span>
+      </div>
+
       <!-- LEFT: sensitivity knobs + min/max ranges -->
       <div class="shard macro-panel">
         <!-- Reverb -->
@@ -367,7 +417,6 @@
           <div class="slider-handle" id="sliderHandle"></div>
         </div>
         <span class="slider-pct" id="sliderPct">0%</span>
-        <button class="btn small ramp-btn" id="btnAutoRamp" title="Slowly raise the macro across the song">Ramp</button>
       </div>
     </div>
 
@@ -384,6 +433,7 @@
 </div>
 
 <input type="file" id="folderInput" webkitdirectory directory multiple>
+<div class="search-results" id="searchResults"></div>
 
 <script>
 /* ============================================================
@@ -408,7 +458,8 @@ const state = {
   waveformPeaks: null,
   crackSeed: [],
   dynamicsMode: 'limiter',   // 'limiter' | 'compressor'
-  autoRamp: false,
+  macroMode: 'manual',       // 'manual' | 'auto' | 'vibrato'
+  vibratoSpeed: 'slow',      // 'slow' | 'fast'
 };
 
 /* ============================================================
@@ -416,6 +467,7 @@ const state = {
    ============================================================ */
 let audioCtx = null, audioEl = null, analyser = null, analyserData = null;
 let sourceNode = null;
+let preampGain = null;
 let reverbConv = null, reverbDry = null, reverbWet = null, reverbMix = null;
 let eqNode = null;
 let satPreGain = null, satNode = null, satPostGain = null;
@@ -444,6 +496,11 @@ function initAudioContext() {
   analyser.fftSize = 2048;
   analyserData = new Uint8Array(analyser.frequencyBinCount);
 
+  /* 0. Pre-amp: amplitude gain, first in chain, -12 dB to 0 dB */
+  preampGain = audioCtx.createGain();
+  preampGain.gain.value = 1.0;  // 0 dB default
+  sourceNode.connect(preampGain);
+
   /* 1. Reverb: parallel dry/wet convolver */
   reverbConv = audioCtx.createConvolver();
   reverbDry  = audioCtx.createGain();
@@ -451,8 +508,8 @@ function initAudioContext() {
   reverbDry.gain.value = 1.0;
   reverbWet.gain.value = 0.0;
   reverbMix  = audioCtx.createGain();
-  sourceNode.connect(reverbDry);
-  sourceNode.connect(reverbConv);
+  preampGain.connect(reverbDry);
+  preampGain.connect(reverbConv);
   reverbConv.connect(reverbWet);
   reverbDry.connect(reverbMix);
   reverbWet.connect(reverbMix);
@@ -511,7 +568,7 @@ function getEffective(key) {
 }
 
 function updateAllEffects() {
-  applyReverb(getEffective('reverb'));
+  if (state.macroMode !== 'vibrato') applyReverb(getEffective('reverb'));
   applyEQ(getEffective('eq'));
   applySat(getEffective('sat'));
 }
@@ -519,8 +576,11 @@ function updateAllEffects() {
 /* Reverb — decay time still tracks the macro/sensitivity, but the
    wet/dry balance is fixed at 0.8 wet regardless of the knob so the
    space always feels submerged once any reverb is dialed in at all. */
+let _lastReverbEff = -1;
 function applyReverb(eff) {
   if (!reverbConv) return;
+  if (Math.abs(eff - _lastReverbEff) < 0.008) return;
+  _lastReverbEff = eff;
   const decay = Math.pow(eff, 1.5) * 60;
   const wet = 0.8;
   reverbWet.gain.value = wet;
@@ -598,6 +658,7 @@ async function decodeTrackPeaks(file) {
     const ctx = audioCtx || new AudioContext();
     const decoded = await ctx.decodeAudioData(arrBuf.slice(0)); // slice to avoid detached buffer
     currentDecodedBuffer = decoded;
+    if (state.macroMode === 'auto') applyAutoMacro(decoded);
     const ch = decoded.getChannelData(0);
     const numBars = 300;  // zoomed out: 300 bars across the canvas
     const blockSize = Math.floor(ch.length / numBars);
@@ -919,9 +980,6 @@ function updateTimeDisplay() {
   if (!audioEl) return;
   document.getElementById('trackTime').textContent =
     `${fmt(audioEl.currentTime)} / ${fmt(audioEl.duration || 0)}`;
-  if (state.autoRamp && audioEl.duration) {
-    setMacro((audioEl.currentTime / audioEl.duration) * 100);
-  }
 }
 
 /* ============================================================
@@ -977,8 +1035,7 @@ function renderSearchResults(query) {
 
   const matches = state.playlist
     .map((f, idx) => ({ f, idx }))
-    .filter(({ f }) => f.name.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, 8);
+    .filter(({ f }) => f.name.toLowerCase().includes(query.toLowerCase()));
 
   if (!matches.length) {
     const empty = document.createElement('div');
@@ -1002,8 +1059,22 @@ function renderSearchResults(query) {
   searchResults.classList.add('open');
 }
 
-searchInput.addEventListener('input', e => renderSearchResults(e.target.value.trim()));
-searchInput.addEventListener('focus', e => { if (e.target.value.trim()) renderSearchResults(e.target.value.trim()); });
+function positionSearchResults() {
+  const rect = searchInput.getBoundingClientRect();
+  searchResults.style.top  = (rect.bottom + 6) + 'px';
+  searchResults.style.left = rect.left + 'px';
+}
+
+searchInput.addEventListener('input', e => {
+  positionSearchResults();
+  renderSearchResults(e.target.value.trim());
+});
+searchInput.addEventListener('focus', e => {
+  if (e.target.value.trim()) {
+    positionSearchResults();
+    renderSearchResults(e.target.value.trim());
+  }
+});
 
 document.addEventListener('click', e => {
   if (!searchWrap.contains(e.target)) {
@@ -1033,10 +1104,8 @@ let draggingSlider = false;
 function sliderFromEvent(e) {
   const rect = sliderTrack.getBoundingClientRect();
   const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-  if (state.autoRamp) {
-    state.autoRamp = false;
-    document.getElementById('btnAutoRamp').classList.remove('on');
-  }
+  // Manual drag always switches back to Manual mode
+  if (state.macroMode !== 'manual') setMacroMode('manual');
   setMacro(100 * (1 - y / rect.height));
 }
 sliderTrack.addEventListener('mousedown', e => { draggingSlider = true; sliderFromEvent(e); });
@@ -1047,9 +1116,96 @@ window.addEventListener('touchmove', e => { if (draggingSlider) sliderFromEvent(
 window.addEventListener('touchend', () => draggingSlider = false);
 setTimeout(() => setMacro(0), 50);
 
-document.getElementById('btnAutoRamp').addEventListener('click', () => {
-  state.autoRamp = !state.autoRamp;
-  document.getElementById('btnAutoRamp').classList.toggle('on', state.autoRamp);
+
+/* ============================================================
+   MACRO MODE: MANUAL / AUTO / VIBRATO
+   ============================================================ */
+
+/* --- Vibrato engine --- */
+let vibratoOrigin = 0;
+let vibratoTarget = null;
+let vibStartMacro = 0;
+let vibStartTime  = 0;
+let vibRafId      = null;
+
+function vibratoTick(now) {
+  if (state.macroMode !== 'vibrato') return;
+  const duration = state.vibratoSpeed === 'slow' ? 10000 : 2000;
+
+  if (vibratoTarget === null) {
+    // pick new random target: origin ±10, clamped [0, 100]
+    const delta = Math.random() * 20 - 10;
+    vibratoTarget = Math.max(0, Math.min(100, vibratoOrigin + delta));
+    vibStartMacro = state.macro;
+    vibStartTime  = now;
+  }
+
+  const t = Math.min(1, (now - vibStartTime) / duration);
+  setMacro(vibStartMacro + (vibratoTarget - vibStartMacro) * t);
+
+  if (t >= 1) vibratoTarget = null; // reached — next tick picks a new one
+  vibRafId = requestAnimationFrame(vibratoTick);
+}
+
+function startVibrato() {
+  stopVibrato();
+  vibratoOrigin = state.macro;
+  vibratoTarget = null;
+  vibRafId = requestAnimationFrame(vibratoTick);
+}
+
+function stopVibrato() {
+  if (vibRafId) { cancelAnimationFrame(vibRafId); vibRafId = null; }
+  vibratoTarget = null;
+}
+
+/* --- Auto LUFS → macro --- */
+function applyAutoMacro(audioBuffer) {
+  // RMS loudness approximation (sampled for speed)
+  const data = audioBuffer.getChannelData(0);
+  const step  = Math.max(1, Math.floor(data.length / 60000));
+  let sumSq = 0, count = 0;
+  for (let i = 0; i < data.length; i += step) { sumSq += data[i] * data[i]; count++; }
+  const rmsDb = 20 * Math.log10(Math.max(Math.sqrt(sumSq / count), 1e-10));
+
+  // Normalise: [-23, -8] dBFS → [0 quiet … 1 loud]
+  const normalized = Math.max(0, Math.min(1, (rmsDb + 23) / 15));
+
+  // Effect headroom factor: high sensitivity knobs hit harder, so pull macro
+  // down more aggressively for loud tracks when the chain is cranked up.
+  const sensFactor = (state.sensitivity.reverb + state.sensitivity.eq + state.sensitivity.sat) / 300;
+  const macroTop   = 55 + (1 - sensFactor) * 20; // 55–75 depending on sensitivity
+
+  setMacro(Math.round((1 - normalized) * macroTop + 10));
+}
+
+/* --- Mode switcher --- */
+function setMacroMode(mode) {
+  stopVibrato();
+  state.macroMode = mode;
+
+  document.getElementById('btnManual').classList.toggle('on', mode === 'manual');
+  document.getElementById('btnAuto').classList.toggle('on',   mode === 'auto');
+  document.getElementById('btnVibrato').classList.toggle('on', mode === 'vibrato');
+  document.getElementById('vibratoSpeedGroup').style.display = mode === 'vibrato' ? 'flex' : 'none';
+
+  if (mode === 'vibrato') startVibrato();
+  if (mode === 'auto' && currentDecodedBuffer) applyAutoMacro(currentDecodedBuffer);
+}
+
+document.getElementById('btnManual').addEventListener('click',  () => setMacroMode('manual'));
+document.getElementById('btnAuto').addEventListener('click',    () => setMacroMode('auto'));
+document.getElementById('btnVibrato').addEventListener('click', () => setMacroMode('vibrato'));
+
+document.getElementById('btnSlow').addEventListener('click', () => {
+  state.vibratoSpeed = 'slow';
+  document.getElementById('btnSlow').classList.add('on');
+  document.getElementById('btnFast').classList.remove('on');
+});
+document.getElementById('btnFast').addEventListener('click', () => {
+  state.vibratoSpeed = 'fast';
+  document.getElementById('btnFast').classList.add('on');
+  document.getElementById('btnSlow').classList.remove('on');
 });
 
 /* ============================================================
@@ -1145,6 +1301,43 @@ document.querySelectorAll('.knob').forEach(knob => {
   window.addEventListener('mouseup', endDrag);
   window.addEventListener('touchend', endDrag);
 });
+
+/* ============================================================
+   PRE-AMP SLIDER  (0 dB top → -12 dB bottom)
+   ============================================================ */
+const preampTrack  = document.getElementById('preampTrack');
+const preampHandle = document.getElementById('preampHandle');
+const preampDbLabel = document.getElementById('preampDb');
+let preampPct = 0;  // 0 = top (0 dB), 100 = bottom (-12 dB)
+
+function setPreamp(pct) {
+  preampPct = Math.max(0, Math.min(100, pct));
+  const db = -(preampPct / 100) * 12;          // 0 → 0 dB, 100 → -12 dB
+  const linear = Math.pow(10, db / 20);
+  if (preampGain) preampGain.gain.value = linear;
+
+  const y = preampTrack.clientHeight * (preampPct / 100);
+  preampHandle.style.top = y + 'px';
+  preampDbLabel.textContent = db === 0 ? '0 dB' : db.toFixed(1) + ' dB';
+
+  // fill: ember from top down to handle position
+  preampTrack.style.background =
+    `linear-gradient(to bottom, var(--ember-glow) 0%, var(--ember-glow) ${preampPct}%, var(--degraded) ${preampPct}%, var(--degraded-dark) 100%)`;
+}
+
+let draggingPreamp = false;
+function preampFromEvent(e) {
+  const rect = preampTrack.getBoundingClientRect();
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  setPreamp((y / rect.height) * 100);
+}
+preampTrack.addEventListener('mousedown', e => { draggingPreamp = true; preampFromEvent(e); });
+window.addEventListener('mousemove', e => { if (draggingPreamp) preampFromEvent(e); });
+window.addEventListener('mouseup', () => draggingPreamp = false);
+preampTrack.addEventListener('touchstart', e => { draggingPreamp = true; preampFromEvent(e); }, { passive: false });
+window.addEventListener('touchmove', e => { if (draggingPreamp) preampFromEvent(e); });
+window.addEventListener('touchend', () => draggingPreamp = false);
+setTimeout(() => setPreamp(0), 50);
 
 /* ============================================================
    COLOR
